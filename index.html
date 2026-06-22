@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OPT & LRU Page Replacement Simulator</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 30px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #1f3b57;
+    }
+
+    .input-box {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #1f7a5c;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+
+    button:hover {
+      background: #155c45;
+    }
+
+    .result {
+      margin-top: 30px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      margin-bottom: 25px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #1f3b57;
+      color: white;
+    }
+
+    .fault {
+      color: red;
+      font-weight: bold;
+    }
+
+    .hit {
+      color: green;
+      font-weight: bold;
+    }
+
+    .summary {
+      background: #eef6f2;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>Virtual Memory Page Replacement Simulator</h1>
+  <h2>OPT vs LRU Algorithm</h2>
+
+  <div class="input-box">
+    <input type="text" id="referenceString" value="7 0 1 2 0 3 0 4 2 3 0 3" placeholder="Enter reference string">
+    <input type="number" id="frameCount" value="3" min="1" placeholder="Frames">
+    <button onclick="runSimulation()">Run Simulation</button>
+  </div>
+
+  <div id="output"></div>
+</div>
+
+<script>
+function runSimulation() {
+  const referenceInput = document.getElementById("referenceString").value.trim();
+  const frameCount = parseInt(document.getElementById("frameCount").value);
+
+  if (!referenceInput || frameCount <= 0) {
+    alert("Please enter a valid reference string and frame count.");
+    return;
+  }
+
+  const references = referenceInput.split(/\s+/).map(Number);
+
+  const optResult = simulateOPT(references, frameCount);
+  const lruResult = simulateLRU(references, frameCount);
+
+  let output = "";
+
+  output += createResultTable("OPT Algorithm", optResult, frameCount);
+  output += createResultTable("LRU Algorithm", lruResult, frameCount);
+
+  output += `
+    <h2>Comparison Result</h2>
+    <table>
+      <tr>
+        <th>Algorithm</th>
+        <th>Page Faults</th>
+        <th>Page Hits</th>
+        <th>Hit Ratio</th>
+      </tr>
+      <tr>
+        <td>OPT</td>
+        <td>${optResult.faults}</td>
+        <td>${optResult.hits}</td>
+        <td>${((optResult.hits / references.length) * 100).toFixed(2)}%</td>
+      </tr>
+      <tr>
+        <td>LRU</td>
+        <td>${lruResult.faults}</td>
+        <td>${lruResult.hits}</td>
+        <td>${((lruResult.hits / references.length) * 100).toFixed(2)}%</td>
+      </tr>
+    </table>
+  `;
+
+  document.getElementById("output").innerHTML = output;
+}
+
+function simulateLRU(references, frameCount) {
+  let frames = [];
+  let steps = [];
+  let faults = 0;
+  let hits = 0;
+
+  for (let i = 0; i < references.length; i++) {
+    let page = references[i];
+    let status = "";
+
+    if (frames.includes(page)) {
+      hits++;
+      status = "Hit";
+    } else {
+      faults++;
+      status = "Fault";
+
+      if (frames.length < frameCount) {
+        frames.push(page);
+      } else {
+        let leastRecentlyUsedIndex = 0;
+        let oldestUsage = Infinity;
+
+        for (let j = 0; j < frames.length; j++) {
+          let lastUsed = references.slice(0, i).lastIndexOf(frames[j]);
+
+          if (lastUsed < oldestUsage) {
+            oldestUsage = lastUsed;
+            leastRecentlyUsedIndex = j;
+          }
+        }
+
+        frames[leastRecentlyUsedIndex] = page;
+      }
+    }
+
+    steps.push({
+      page: page,
+      frames: [...frames],
+      status: status
+    });
+  }
+
+  return { steps, faults, hits };
+}
+
+function simulateOPT(references, frameCount) {
+  let frames = [];
+  let steps = [];
+  let faults = 0;
+  let hits = 0;
+
+  for (let i = 0; i < references.length; i++) {
+    let page = references[i];
+    let status = "";
+
+    if (frames.includes(page)) {
+      hits++;
+      status = "Hit";
+    } else {
+      faults++;
+      status = "Fault";
+
+      if (frames.length < frameCount) {
+        frames.push(page);
+      } else {
+        let farthestIndex = -1;
+        let replaceIndex = -1;
+
+        for (let j = 0; j < frames.length; j++) {
+          let nextUse = references.slice(i + 1).indexOf(frames[j]);
+
+          if (nextUse === -1) {
+            replaceIndex = j;
+            break;
+          }
+
+          if (nextUse > farthestIndex) {
+            farthestIndex = nextUse;
+            replaceIndex = j;
+          }
+        }
+
+        frames[replaceIndex] = page;
+      }
+    }
+
+    steps.push({
+      page: page,
+      frames: [...frames],
+      status: status
+    });
+  }
+
+  return { steps, faults, hits };
+}
+
+function createResultTable(title, result, frameCount) {
+  let html = `
+    <div class="result">
+      <h2>${title}</h2>
+      <div class="summary">
+        Page Faults: ${result.faults} |
+        Page Hits: ${result.hits}
+      </div>
+
+      <table>
+        <tr>
+          <th>Step</th>
+          <th>Page Request</th>
+  `;
+
+  for (let i = 1; i <= frameCount; i++) {
+    html += `<th>Frame ${i}</th>`;
+  }
+
+  html += `<th>Status</th></tr>`;
+
+  result.steps.forEach((step, index) => {
+    html += `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${step.page}</td>
+    `;
+
+    for (let i = 0; i < frameCount; i++) {
+      html += `<td>${step.frames[i] !== undefined ? step.frames[i] : "-"}</td>`;
+    }
+
+    html += `
+        <td class="${step.status === 'Fault' ? 'fault' : 'hit'}">
+          ${step.status}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `</table></div>`;
+
+  return html;
+}
+</script>
+
+</body>
+</html>
