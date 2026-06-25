@@ -67,7 +67,4 @@ LRU is more practical than OPT because it uses past page usage instead of future
 * Adding more page replacement algorithms such as FIFO and Second Chance.
 
 ## Group Members
-
 EZRA, MARS, TASYA, NAZNEEN
-
-Overall, the project provides a simple and interactive way to understand virtual memory management in operating systems.
