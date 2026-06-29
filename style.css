@@ -157,3 +157,37 @@ th {
   border-radius: 10px;
   font-weight: bold;
 }
+
+.legend{
+    display:flex;
+    justify-content:center;
+    gap:25px;
+    margin:20px 0;
+    flex-wrap:wrap;
+}
+
+.legend-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:15px;
+}
+
+.legend-box{
+    width:18px;
+    height:18px;
+    border-radius:4px;
+    border:2px solid #555;
+}
+
+.legend-box.hit{
+    background:#4CAF50;
+}
+
+.legend-box.fault{
+    background:#FF6B6B;
+}
+
+.legend-box.replaced{
+    background:#FFD54F;
+}
